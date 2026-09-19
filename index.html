@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="mg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Examen Blanc 3ème - Auto Sync Cloud</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #0284c7;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --success: #15803d;
+            --success-bg: #dcfce7;
+            --danger: #b91c1c;
+            --danger-bg: #fee2e2;
+            --laureat-bg: #fef3c7;
+            --laureat-text: #92400e;
+            --laureat-border: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 15px; }
+        .container { max-width: 1250px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        h1, h2, h3 { color: var(--primary); }
+        .form-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+        input, select, button, textarea { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        button { background-color: var(--secondary); color: white; border: none; cursor: pointer; transition: 0.3s; font-weight: 600; }
+        button:hover { background-color: var(--primary); }
+        .btn-save { background-color: #16a34a; font-size: 16px; padding: 12px 20px; }
+        .btn-save:hover { background-color: #15803d; }
+        .btn-pdf { background-color: #8b5cf6; font-weight: bold; }
+        .btn-suppr { background-color: #ef4444; padding: 5px 10px; font-size: 12px; }
+
+        .nav-mode { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .nav-btn { padding: 12px 20px; font-size: 16px; border-radius: 8px; background: #e2e8f0; color: var(--text); }
+        .nav-btn.active { background: var(--primary); color: white; }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: center; font-size: 13px; }
+        th { background-color: var(--primary); color: white; }
+        input[type="number"] { width: 55px; }
+
+        .search-card { max-width: 450px; margin: 20px auto; text-align: center; padding: 30px 20px; }
+        .result-card { margin-top: 20px; padding: 20px; border-radius: 10px; display: none; border: 1px solid #e2e8f0; background-color: #ffffff; }
+        .student-name { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 10px; text-transform: uppercase; }
+        .status-badge { display: block; width: 100%; padding: 12px; font-weight: 800; border-radius: 30px; font-size: 16px; }
+        .status-admis { background-color: var(--success-bg); color: var(--success); border: 1px solid #bbf7d0; }
+        .status-non-admis { background-color: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
+        .laureat-badge { background-color: var(--laureat-bg); color: var(--laureat-text); border: 2px solid var(--laureat-border); padding: 12px; border-radius: 8px; font-weight: 700; font-size: 14px; margin-top: 12px; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; text-align: center; }
+
+        .loading-status { display: inline-block; font-size: 12px; color: #0284c7; font-weight: bold; margin-left: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Commutation de Mode -->
+    <div class="nav-mode">
+        <button class="nav-btn" id="btn-admin-mode" onclick="demanderMotDePasse()">🔒 Mode Administration</button>
+        <button class="nav-btn active" id="btn-student-mode" onclick="switchMode('student')">📱 Mode Élève</button>
+    </div>
+
+    <!-- ADMIN SECTION -->
+    <div id="section-admin" style="display: none;">
+        <h1>🎯 GESTION DES NOTES - EXAMEN BLANC (3ÈME)</h1>
+
+        <div class="card" style="background-color: #f0fdf4; border: 1px solid #16a34a;">
+            <h3>☁️ Sychronisation Automatique Cloud</h3>
+            <p style="font-size: 13px; margin: 8px 0; color: #15803d;">
+                Rehefa manova na mampiditra naoty ianao, tsindrio ilay bokotra ambany io mba handefasana ny data any amin'ny Cloud.
+            </p>
+            <button class="btn-save" onclick="enregistrerVersCloud()">☁️ Enregistrer & Synchroniser any amin'ny Phone</button>
+            <span id="sync-status" class="loading-status"></span>
+        </div>
+
+        <div class="card">
+            <label><strong>EXAMEN BLANC:</strong></label>
+            <select id="select-eb" onchange="changerExamenBlanc()" style="font-weight: bold; color: var(--primary); margin-left: 10px;">
+                <option value="eb1">EXAMEN BLANC N° 1</option>
+                <option value="eb2">EXAMEN BLANC N° 2</option>
+                <option value="eb3">EXAMEN BLANC N° 3</option>
+            </select>
+        </div>
+
+        <div class="card">
+            <h2>1. Hampiditra Mpianatra</h2>
+            <div class="form-group">
+                <input type="text" id="nom" placeholder="Anarana (Nom)">
+                <input type="text" id="prenom" placeholder="Fanampiny (Prénom)">
+                <button onclick="ajouterEleve()">Ampidiro</button>
+            </div>
+            <details>
+                <summary style="cursor:pointer; color:var(--secondary); font-weight:600;">Coller Liste (Maro)</summary>
+                <textarea id="liste-coller" placeholder="RAKOTO Jean&#10;RASOA Marie" style="margin-top:10px;"></textarea>
+                <button onclick="ajouterElevesEnMasse()" style="margin-top: 5px;">Ampidiro Rehetra</button>
+            </details>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <h2>2. Lisitry ny Mpianatra sy Naoty</h2>
+                <button class="btn-pdf" onclick="genererListeAdmis()">🎓 Lisitry ny Afaka (PDF)</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Anarana & Fanampiny</th>
+                            <th>MLG (3)</th><th>FRS (2)</th><th>ANG (2)</th><th>HG (3)</th><th>MATH (3)</th>
+                            <th>SPC (2)</th><th>SVT (3)</th><th>EPS (1)</th><th>FOV (1)</th><th>Arts (2)</th>
+                            <th>Moyenne</th><th>Atao</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listeEleves"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT SECTION -->
+    <div id="section-student">
+        <div class="card search-card">
+            <div style="font-size: 40px;">🎓</div>
+            <h2>Examen Blanc 3ème</h2>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Ampidiro ny anaranao mba hijerena ny vokatry ny fanadinana</p>
+
+            <div class="form-group" style="flex-direction: column;">
+                <select id="examenSelectStudent">
+                    <option value="eb1">EXAMEN BLANC N° 1</option>
+                    <option value="eb2">EXAMEN BLANC N° 2</option>
+                    <option value="eb3">EXAMEN BLANC N° 3</option>
+                </select>
+                <input type="text" id="studentInput" placeholder="Anarana sy Fanampiny..." onkeypress="if(event.key==='Enter') rechercherResultat()">
+                <button style="padding: 14px; font-size: 16px;" onclick="rechercherResultat()">Hamarina ny Valiny</button>
+            </div>
+
+            <div id="errorMessage" style="color: var(--danger); background-color: var(--danger-bg); padding: 10px; border-radius: 6px; display: none; font-size: 13px;">
+                ⚠️ Tsy hita ao amin'ny lisitra ity anarana ity.
+            </div>
+
+            <div id="resultCard" class="result-card">
+                <div id="displayName" class="student-name"></div>
+                <div id="statusBadge" class="status-badge"></div>
+                <div id="laureatSection"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Mot de passe Admin -->
+<div class="modal" id="modalPassword">
+    <div class="modal-content">
+        <h3>🔒 Mot de Passe Admin</h3>
+        <p style="font-size: 13px; color: #64748b; margin: 10px 0;">Ampidiro ny mot de passe:</p>
+        <input type="password" id="adminPasswordInput" placeholder="Mot de passe..." style="width: 100%; margin-bottom: 12px;" onkeypress="if(event.key==='Enter') verifierMotDePasse()">
+        <div style="display: flex; gap: 8px; justify-content: center;">
+            <button onclick="verifierMotDePasse()">Hamarina</button>
+            <button onclick="fermerModal('modalPassword')" style="background-color: #ef4444;">Akatona</button>
+        </div>
+        <p id="pwdError" style="color: red; font-size: 12px; margin-top: 8px; display: none;">Mot de passe diso!</p>
+    </div>
+</div>
+
+<!-- Modal Admis -->
+<div class="modal" id="modalAdmis">
+    <div class="modal-content" style="max-width: 800px; text-align: left;">
+        <h2>LISITRY NY MPIANATRA AFAKA</h2>
+        <table>
+            <thead>
+                <tr><th>Rang</th><th>Anarana sy Fanampiny</th><th>Kilasy</th></tr>
+            </thead>
+            <tbody id="b-admis-list"></tbody>
+        </table>
+        <div style="margin-top: 20px; display:flex; justify-content:space-between;">
+            <button onclick="window.print()">Imprimer / PDF</button>
+            <button onclick="fermerModal('modalAdmis')" style="background-color: #ef4444;">Akatona</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // CONFIGURATION JSONBIN.IO (Soloy eto ny anao)
+    const BIN_ID = "6aae85cdffd5d1605319565f"; 
+    const API_KEY = "$2a$10$izYoh1irPcaCjkxyy6tHVO7hVxuI2UkZ5yVxMOuzQaPT6DABL/jDO"; 
+    const ADMIN_PASSWORD = "admin123";
+
+    let estConnecteAdmin = false;
+    let currentEB = 'eb1';
+    let eleves = [];
+
+    const matieres = [
+        { key: 'mlg', name: 'Malagasy', coef: 3 }, { key: 'frs', name: 'Français', coef: 2 },
+        { key: 'ang', name: 'Anglais', coef: 2 }, { key: 'hg', name: 'Histoire-Géo', coef: 3 },
+        { key: 'math', name: 'Maths', coef: 3 }, { key: 'spc', name: 'SPC', coef: 2 },
+        { key: 'svt', name: 'SVT', coef: 3 }, { key: 'eps', name: 'EPS', coef: 1 },
+        { key: 'fov', name: 'FOV', coef: 1 }, { key: 'arts', name: 'Arts', coef: 2 }
+    ];
+
+    // Mampifandray amin'ny Cloud rehefa sokafana ny site
+    function chargerDepuisCloud() {
+        if(BIN_ID === "YOUR_BIN_ID") {
+            eleves = JSON.parse(localStorage.getItem('eleves_3eme_eb')) || [];
+            afficherEleves();
+            return;
+        }
+
+        fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { "X-Master-Key": API_KEY }
+        })
+        .then(res => res.json())
+        .then(data => {
+            eleves = data.record || [];
+            afficherEleves();
+        })
+        .catch(err => console.log("Erreur lors du chargement:", err));
+    }
+
+    function enregistrerVersCloud() {
+        const statusSpan = document.getElementById('sync-status');
+        statusSpan.innerText = "⏳ Mandefa Data...";
+
+        fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Master-Key": API_KEY
+            },
+            body: JSON.stringify(eleves)
+        })
+        .then(res => res.json())
+        .then(data => {
+            statusSpan.innerText = "✅ Voasoratra sy voasynchronisé!";
+            setTimeout(() => statusSpan.innerText = "", 4000);
+        })
+        .catch(err => {
+            statusSpan.innerText = "❌ Nisy olana teo amin'ny fandefasana!";
+        });
+    }
+
+    function demanderMotDePasse() {
+        if (estConnecteAdmin) switchMode('admin');
+        else {
+            document.getElementById('pwdError').style.display = 'none';
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('modalPassword').style.display = 'flex';
+        }
+    }
+
+    function verifierMotDePasse() {
+        if (document.getElementById('adminPasswordInput').value === ADMIN_PASSWORD) {
+            estConnecteAdmin = true;
+            fermerModal('modalPassword');
+            switchMode('admin');
+        } else {
+            document.getElementById('pwdError').style.display = 'block';
+        }
+    }
+
+    function switchMode(mode) {
+        document.getElementById('section-admin').style.display = mode === 'admin' ? 'block' : 'none';
+        document.getElementById('section-student').style.display = mode === 'student' ? 'block' : 'none';
+        document.getElementById('btn-admin-mode').classList.toggle('active', mode === 'admin');
+        document.getElementById('btn-student-mode').classList.toggle('active', mode === 'student');
+    }
+
+    function changerExamenBlanc() {
+        currentEB = document.getElementById('select-eb').value;
+        afficherEleves();
+    }
+
+    function ajouterEleve() {
+        const nom = document.getElementById('nom').value.trim();
+        const prenom = document.getElementById('prenom').value.trim();
+        if(!nom) return alert('Ampidiro ny anarana!');
+        creerEleve(nom, prenom);
+        document.getElementById('nom').value = '';
+        document.getElementById('prenom').value = '';
+        afficherEleves();
+    }
+
+    function ajouterElevesEnMasse() {
+        const texte = document.getElementById('liste-coller').value.trim();
+        if(!texte) return;
+        texte.split('\n').forEach(ligne => {
+            if(ligne.trim()) {
+                const parts = ligne.trim().split(' ');
+                creerEleve(parts[0], parts.slice(1).join(' '));
+            }
+        });
+        document.getElementById('liste-coller').value = '';
+        afficherEleves();
+    }
+
+    function creerEleve(nom, prenom) {
+        const emptyNotes = { mlg:0, frs:0, ang:0, hg:0, math:0, spc:0, svt:0, eps:0, fov:0, arts:0 };
+        eleves.push({
+            id: Date.now() + Math.random(),
+            nom: nom, prenom: prenom,
+            notes: { eb1: {...emptyNotes}, eb2: {...emptyNotes}, eb3: {...emptyNotes} }
+        });
+    }
+
+    function modifierNote(id, key, val) {
+        const eleve = eleves.find(e => e.id === id);
+        if(eleve) {
+            eleve.notes[currentEB][key] = parseFloat(val) || 0;
+            afficherEleves();
+        }
+    }
+
+    function calculerMoyenne(notesObj) {
+        if(!notesObj) return 0;
+        let totalP = 0, totalC = 0;
+        matieres.forEach(m => {
+            totalP += (notesObj[m.key] || 0) * m.coef;
+            totalC += m.coef;
+        });
+        return parseFloat((totalP / totalC).toFixed(2));
+    }
+
+    function afficherEleves() {
+        const tbody = document.getElementById('listeEleves');
+        tbody.innerHTML = '';
+        eleves.forEach(eleve => {
+            const currentNotes = eleve.notes[currentEB];
+            const moyenne = calculerMoyenne(currentNotes);
+            let notesInputs = '';
+            matieres.forEach(m => {
+                notesInputs += `<td><input type="number" min="0" max="20" step="0.5" value="${currentNotes[m.key]}" onchange="modifierNote(${eleve.id}, '${m.key}', this.value)"></td>`;
+            });
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${eleve.nom} ${eleve.prenom}</strong></td>
+                ${notesInputs}
+                <td><strong>${moyenne.toFixed(2)}</strong></td>
+                <td><button class="btn-suppr" onclick="supprimerEleve(${eleve.id})">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function supprimerEleve(id) {
+        if(confirm("Tena fafana ve?")) {
+            eleves = eleves.filter(e => e.id !== id);
+            afficherEleves();
+        }
+    }
+
+    function rechercherResultat() {
+        const inputName = document.getElementById('studentInput').value.trim().toLowerCase();
+        const selectedEB = document.getElementById('examenSelectStudent').value;
+        const resultCard = document.getElementById('resultCard');
+        const errorMessage = document.getElementById('errorMessage');
+
+        resultCard.style.display = 'none';
+        errorMessage.style.display = 'none';
+
+        if (!inputName) return;
+
+        const eleve = eleves.find(e => `${e.nom} ${e.prenom}`.toLowerCase().includes(inputName));
+
+        if (eleve) {
+            const moyenne = calculerMoyenne(eleve.notes[selectedEB]);
+            document.getElementById('displayName').innerText = `${eleve.nom} ${eleve.prenom}`;
+            
+            const badge = document.getElementById('statusBadge');
+            if(moyenne >= 9.50) {
+                badge.innerText = "ADMIS (AFAKA)";
+                badge.className = "status-badge status-admis";
+                document.getElementById('laureatSection').innerHTML = moyenne >= 14 ? `<div class="laureat-badge">🏆 Félicitations ! Ianao dia anatin'ny Lauréat.</div>` : '';
+            } else {
+                badge.innerText = "NON ADMIS (TSY AFAKA)";
+                badge.className = "status-badge status-non-admis";
+                document.getElementById('laureatSection').innerHTML = '';
+            }
+            resultCard.style.display = 'block';
+        } else {
+            errorMessage.style.display = 'block';
+        }
+    }
+
+    function genererListeAdmis() {
+        const admis = eleves.map(e => ({ ...e, moyenne: calculerMoyenne(e.notes[currentEB]) }))
+                            .filter(e => e.moyenne >= 9.50)
+                            .sort((a,b) => b.moyenne - a.moyenne);
+
+        const tbody = document.getElementById('b-admis-list');
+        tbody.innerHTML = admis.length ? admis.map((e, i) => `<tr><td>${i+1}</td><td>${e.nom} ${e.prenom}</td><td>3ème</td></tr>`).join('') : `<tr><td colspan="3">Tsy misy afaka.</td></tr>`;
+        document.getElementById('modalAdmis').style.display = 'flex';
+    }
+
+    function fermerModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // Sokafana sy alaina ny data rehefa miantomboka
+    chargerDepuisCloud();
+</script>
+</body>
+</html>
